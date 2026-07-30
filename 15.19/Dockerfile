@@ -1,32 +1,40 @@
 FROM govpf/cypress:15.19
 
-# install Chromebrowser
-RUN \
-  wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-  echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list && \
-  apt-get update && \
-  apt-get install -y dbus-x11 google-chrome-stable && \
-  rm -rf /var/lib/apt/lists/*
+# Install Google Chrome
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        gnupg \
+        dbus-x11 \
+        zip; \
+    \
+    mkdir -p /etc/apt/keyrings; \
+    curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
+        | gpg --dearmor -o /etc/apt/keyrings/google.gpg; \
+    \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
+        > /etc/apt/sources.list.d/google-chrome.list; \
+    \
+    apt-get update; \
+    apt-get install -y --no-install-recommends google-chrome-stable; \
+    \
+    rm -rf /var/lib/apt/lists/*
 
 # "fake" dbus address to prevent errors
 # https://github.com/SeleniumHQ/docker-selenium/issues/87
 ENV DBUS_SESSION_BUS_ADDRESS=/dev/null
 
-# Add zip utility - it comes in very handy
-RUN apt-get update && apt-get install -y zip
+# Versions of local tools
+RUN echo "node version:    $(node -v)" \
+    && echo "npm version:     $(npm -v)" \
+    && echo "yarn version:    $(yarn -v)" \
+    && echo "debian version:  $(cat /etc/debian_version)" \
+    && echo "Chrome version:  $(google-chrome --version)" \
+    && echo "git version:     $(git --version)"
 
-# versions of local tools
-RUN echo  "node version:    $(node -v) \n" \
-          "npm version:     $(npm -v) \n" \
-          "yarn version:    $(yarn -v) \n" \
-          "debian version:  $(cat /etc/debian_version) \n" \
-          "Chrome version:  $(google-chrome --version) \n" \
-          "git version:     $(git --version) \n"
-
-# a few environment variables to make NPM installs easier
-# good colors for most applications
+# Environment variables
 ENV TERM=xterm
-# avoid million NPM install messages
 ENV npm_config_loglevel=warn
-# allow installing when the main user is root
 ENV npm_config_unsafe_perm=true
