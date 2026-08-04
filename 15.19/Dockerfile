@@ -1,5 +1,8 @@
 FROM govpf/cypress:15.19
 
+LABEL govpf.fromimage="govpf/cypress:15.19"
+LABEL govpf.category="testing"
+
 # Install Google Chrome
 RUN set -eux; \
     apt-get update; \
